@@ -1,0 +1,141 @@
+getgenv().WeAreDevs = {
+    Aimbot = {
+        Checks = {
+            Team = false,
+            Wall = false
+        },
+        Bypass = false,
+        Binding = {
+            Key = "Z",
+            Mode = "Hold"
+        },
+        HitPart = "Head",  -- Select the body part to aim at
+        VelocityPrediction = {
+            Enabled = false,  -- Enable or disable velocity prediction
+            Value = 0.165    -- Customize the prediction value (adjust as needed)
+        }
+    }
+}
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Teams = game:GetService("Teams")
+
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local Camera = workspace.CurrentCamera
+local enabled = false
+local Target = nil
+
+-- Function to apply updates dynamically
+local function ApplyDynamicChanges()
+    print("Dynamic changes applied!")
+    -- You can include logic here to refresh or adjust specific functionalities
+    -- depending on the new values in `getgenv().WeAreDevs.Aimbot`.
+end
+
+-- Create a metatable to monitor changes in the Aimbot table
+local function CreateDynamicAimbotTable(tbl)
+    return setmetatable(tbl, {
+        __newindex = function(t, key, value)
+            rawset(t, key, value)
+            ApplyDynamicChanges() -- Trigger whenever a new value is assigned
+        end,
+        __index = function(t, key)
+            return rawget(t, key)
+        end
+    })
+end
+
+-- Wrap the Aimbot table with a metatable for dynamic updates
+getgenv().WeAreDevs.Aimbot = CreateDynamicAimbotTable(getgenv().WeAreDevs.Aimbot)
+
+function GetClosestPlayer()
+    if Target and Target.Parent and Target.Character and Target.Character:FindFirstChild("Humanoid") and Target.Character.Humanoid.Health > 0 then
+        return Target
+    end
+
+    local closestPlayer = nil
+    local shortestDistance = math.huge
+    local isFFA = #Teams:GetTeams() <= 1
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 and player.Character:FindFirstChild("HumanoidRootPart") then
+            if getgenv().WeAreDevs.Aimbot.Checks.Team and not isFFA then
+                if player.Team == LocalPlayer.Team then
+                    continue
+                end
+            end
+
+            if getgenv().WeAreDevs.Aimbot.Checks.Wall then
+                local ray = Ray.new(Camera.CFrame.Position, (player.Character.HumanoidRootPart.Position - Camera.CFrame.Position).Unit * 300)
+                local hit, _ = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character, Camera})
+                if hit and not hit:IsDescendantOf(player.Character) then
+                    continue
+                end
+            end
+
+            local screenPos, onScreen = Camera:WorldToScreenPoint(player.Character.HumanoidRootPart.Position)
+            
+            if onScreen then
+                local dist = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
+                if dist < shortestDistance then
+                    closestPlayer = player
+                    shortestDistance = dist
+                end
+            end
+        end
+    end
+
+    Target = closestPlayer
+    return closestPlayer
+end
+
+function AimAt(target)
+    local targetPart = target.Character[getgenv().WeAreDevs.Aimbot.HitPart]
+    local targetPos = targetPart.Position
+
+    if getgenv().WeAreDevs.Aimbot.VelocityPrediction.Enabled then
+        local targetVelocity = target.Character.HumanoidRootPart.Velocity
+        targetPos = targetPos + targetVelocity * getgenv().WeAreDevs.Aimbot.VelocityPrediction.Value
+    end
+
+    Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
+end
+
+RunService:BindToRenderStep("wrd", Enum.RenderPriority.Camera.Value, function()
+    if enabled then
+        local target = GetClosestPlayer()
+        if target then
+            AimAt(target)
+        end
+    end
+end)
+
+function HandleInput(input, gameProcessed)
+    local bindKey = getgenv().WeAreDevs.Aimbot.Binding.Key
+    local isCorrectInput = 
+        (bindKey == "MB1" and input.UserInputType == Enum.UserInputType.MouseButton1) or
+        (bindKey == "MB2" and input.UserInputType == Enum.UserInputType.MouseButton2) or
+        (Enum.KeyCode[bindKey] and input.KeyCode == Enum.KeyCode[bindKey])
+
+    if isCorrectInput then
+        if getgenv().WeAreDevs.Aimbot.Binding.Mode == "Toggle" then
+            if input.UserInputState == Enum.UserInputState.Begin then
+                enabled = not enabled
+                if not enabled then
+                    Target = nil
+                end
+            end
+        elseif getgenv().WeAreDevs.Aimbot.Binding.Mode == "Hold" then
+            enabled = input.UserInputState == Enum.UserInputState.Begin
+            if not enabled then
+                Target = nil
+            end
+        end
+    end
+end
+
+UserInputService.InputBegan:Connect(HandleInput)
+UserInputService.InputEnded:Connect(HandleInput)
