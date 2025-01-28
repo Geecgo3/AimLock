@@ -11,7 +11,7 @@ getgenv().WeAreDevs = {
         },
         HitPart = "Head",  -- Select the body part to aim at
         VelocityPrediction = {
-            Enabled = true,  -- Enable or disable velocity prediction
+            Enabled = false,  -- Enable or disable velocity prediction
             Value = 0.165    -- Customize the prediction value (adjust as needed)
         }
     }
