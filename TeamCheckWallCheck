@@ -7,7 +7,7 @@ getgenv().WeAreDevs = {
         Bypass = false,
         Binding = {
             Key = "Z",
-            Mode = "Toggle"
+            Mode = "Hold"
         },
         HitPart = "Head",  -- Select the body part to aim at
         VelocityPrediction = {
