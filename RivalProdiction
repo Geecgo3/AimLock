@@ -7,11 +7,11 @@ getgenv().WeAreDevs = {
         Bypass = false,
         Binding = {
             Key = "Z",
-            Mode = "Toggle"
+            Mode = "Hold"
         },
         HitPart = "Head",  -- Select the body part to aim at
         VelocityPrediction = {
-            Enabled = false,  -- Enable or disable velocity prediction
+            Enabled = true,  -- Enable or disable velocity prediction
             Value = 0.165    -- Customize the prediction value (adjust as needed)
         }
     }
