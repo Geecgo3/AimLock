@@ -1,0 +1,37 @@
+-- Destroy the WeAreDevs aimbot script
+if getgenv().WeAreDevs then
+    -- Overwrite the WeAreDevs global table to disable functionality
+    getgenv().WeAreDevs = nil
+end
+
+-- Disable all existing BindToRenderStep connections
+pcall(function()
+    game:GetService("RunService"):UnbindFromRenderStep("wrd")
+end)
+
+-- Remove any connections to InputBegan and InputEnded to prevent input handling
+local UserInputService = game:GetService("UserInputService")
+for _, connection in pairs(getconnections(UserInputService.InputBegan)) do
+    connection:Disable()
+end
+for _, connection in pairs(getconnections(UserInputService.InputEnded)) do
+    connection:Disable()
+end
+
+-- Remove any additional hooks or modifications made by the aimbot
+local mt = getrawmetatable(game)
+if mt then
+    setreadonly(mt, false)
+    mt.__index = function(self, key)
+        return nil -- Break all indexing to remove injected behavior
+    end
+    setreadonly(mt, true)
+end
+
+-- Destroy any unnecessary objects created by the script
+for _, obj in pairs(workspace:GetDescendants()) do
+    if obj.Name == "wrd" or obj:IsA("BindableFunction") or obj:IsA("BindableEvent") then
+        obj:Destroy()
+    end
+end
+
